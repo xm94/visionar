@@ -25,12 +25,22 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 import com.google.ar.core.Anchor;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
+import com.google.ar.core.Pose;
+import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.AnchorNode;
+import com.google.ar.sceneform.Node;
+import com.google.ar.sceneform.math.Quaternion;
+import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
+import com.google.ar.sceneform.rendering.Renderable;
+import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
 
@@ -40,59 +50,116 @@ import com.google.ar.sceneform.ux.TransformableNode;
 public class HelloSceneformActivity extends AppCompatActivity {
   private static final String TAG = HelloSceneformActivity.class.getSimpleName();
   private static final double MIN_OPENGL_VERSION = 3.0;
-
   private ArFragment arFragment;
   private ModelRenderable andyRenderable;
+  private Renderable myRender;
+  private int msg = 1;
+  private Button button;
 
   @Override
   @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
   // CompletableFuture requires api level 24
   // FutureReturnValueIgnored is not valid
   protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
+      super.onCreate(savedInstanceState);
 
-    if (!checkIsSupportedDeviceOrFinish(this)) {
-      return;
-    }
+      if (!checkIsSupportedDeviceOrFinish(this)) {
+          return;
+      }
 
-    setContentView(R.layout.activity_ux);
-    arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
-
-    // When you build a Renderable, Sceneform loads its resources in the background while returning
-    // a CompletableFuture. Call thenAccept(), handle(), or check isDone() before calling get().
-    ModelRenderable.builder()
-        .setSource(this, R.raw.andy)
-        .build()
-        .thenAccept(renderable -> andyRenderable = renderable)
-        .exceptionally(
-            throwable -> {
-              Toast toast =
-                  Toast.makeText(this, "Unable to load andy renderable", Toast.LENGTH_LONG);
-              toast.setGravity(Gravity.CENTER, 0, 0);
-              toast.show();
-              return null;
-            });
-
-    arFragment.setOnTapArPlaneListener(
-        (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
-          if (andyRenderable == null) {
-            return;
+      setContentView(R.layout.activity_ux);
+      arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
+      /*Create and define our button actions*/
+      button = (Button) findViewById(R.id.button4);
+      button.setOnClickListener(new View.OnClickListener() {
+          @Override
+          public void onClick(View view) {
+              changeMsg();
           }
+      });
+      if(!checkIsSupportedDeviceOrFinish((this))){
+          return;
+      }
+      // When you build a Renderable, Sceneform loads its resources in the background while returning
+      // a CompletableFuture. Call thenAccept(), handle(), or check isDone() before calling get().
+//      ModelRenderable.builder()
+//              .setSource(this, R.raw.andy)
+//              .build()
+//              .thenAccept(renderable -> andyRenderable = renderable)
+//              .exceptionally(
+//                      throwable -> {
+//                          Toast toast =
+//                                  Toast.makeText(this, "Unable to load andy renderable", Toast.LENGTH_LONG);
+//                          toast.setGravity(Gravity.CENTER, 0, 0);
+//                          toast.show();
+//                          return null;
+//                      });
 
-          // Create the Anchor.
-          Anchor anchor = hitResult.createAnchor();
-          AnchorNode anchorNode = new AnchorNode(anchor);
-          anchorNode.setParent(arFragment.getArSceneView().getScene());
+      arFragment.setOnTapArPlaneListener(
+              (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
 
-          // Create the transformable andy and add it to the anchor.
-          TransformableNode andy = new TransformableNode(arFragment.getTransformationSystem());
-          andy.setParent(anchorNode);
-          andy.setRenderable(andyRenderable);
-          andy.select();
-        });
+                  // Create the Anchor.
+                  Pose pose;
+                  float [] xyz = {(float) 0,.3f,-6};
+                  float [] rot = {(float) 0,0,0,1};
+                  pose = new Pose(xyz,rot);
+
+                  Anchor anchor = plane.createAnchor(pose);
+                  AnchorNode anchorNode = new AnchorNode(anchor);
+                  anchorNode.setParent(arFragment.getArSceneView().getScene());
+
+                  // Create the transformable andy and add it to the anchor.
+                  TransformableNode andy = new TransformableNode(arFragment.getTransformationSystem());
+                  andy.setParent(anchorNode);
+                  andy.setRenderable(myRender);
+                  andy.select();
+
+              });
+
+
   }
 
-  /**
+    private void changeMsg() {
+
+        if(msg == 1){
+            button.setText("1");
+            msg=2;
+            ViewRenderable.builder()
+                    .setView(this,R.layout.letter_image)
+                    .build()
+                    .thenAccept(renderable -> myRender = renderable
+                    );
+
+        }else if(msg == 2){
+            button.setText("2");
+            msg = 3;
+            ViewRenderable.builder()
+                    .setView(this,R.layout.letter_image_rotate)
+                    .build()
+                    .thenAccept(renderable -> myRender = renderable
+                    );
+        }else if(msg == 3){
+            button.setText("3");
+            msg = 4;
+            ViewRenderable.builder()
+                    .setView(this,R.layout.letter_image_rotate2)
+                    .build()
+                    .thenAccept(renderable -> myRender = renderable
+                    );
+        }else{
+            button.setText("4");
+            msg = 1;
+            ViewRenderable.builder()
+                    .setView(this,R.layout.letter_web_rotate3)
+                    .build()
+                    .thenAccept(renderable -> myRender = renderable
+                    );
+        }
+        return;
+    }
+
+
+    /**
    * Returns false and displays an error message if Sceneform can not run, true if Sceneform can run
    * on this device.
    *
